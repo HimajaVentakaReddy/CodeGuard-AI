@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#0b1020">
+	<title>CodeGuard AI | Code Analysis</title>
+	<link rel="stylesheet" href="css/style.css">
+	<script src="js/app.js" defer></script>
+</head>
+<body>
+	<div class="app-shell">
+		<header class="topbar">
+			<a class="brand" href="#" aria-label="CodeGuard AI home">
+				<span class="brand-mark" aria-hidden="true">
+					<svg viewBox="0 0 32 32" fill="none">
+						<path d="M16 3.5 27 7.8v7.5c0 6.6-4.5 11.1-11 13.2C9.5 26.4 5 21.9 5 15.3V7.8L16 3.5Z" stroke="currentColor" stroke-width="2"/>
+						<path d="m11.2 15.8 3.1 3.1 6.6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+				</span>
+				<span class="brand-copy">
+					<strong>CodeGuard <span>AI</span></strong>
+					<small>INTELLIGENT CODE ANALYSIS</small>
+				</span>
+			</a>
+			<div class="topbar-caption">Intelligent Code Quality &amp; Vulnerability Analyzer</div>
+			<nav class="main-nav" aria-label="Main navigation">
+				<button class="nav-link active" id="dashboard-nav" type="button" aria-current="page">Dashboard</button>
+				<button class="nav-link" id="history-nav" type="button">History</button>
+			</nav>
+			<div class="connection-status"><span class="status-dot"></span> Local analysis</div>
+		</header>
+
+		<main>
+			<div id="dashboard-page">
+			<section class="welcome-row">
+				<div>
+					<p class="eyebrow">CODE REVIEW WORKSPACE</p>
+					<h1>Find issues before they ship.</h1>
+					<p class="welcome-copy">Analyze Java source for security risks and code quality issues.</p>
+				</div>
+				<div class="language-pill"><span class="java-mark">J</span> Java&nbsp; 17</div>
+			</section>
+
+			<section class="workspace-grid" aria-label="Code analysis workspace">
+				<article class="panel editor-panel">
+					<div class="panel-heading">
+						<div>
+							<p class="eyebrow">SOURCE</p>
+							<h2>Code editor</h2>
+						</div>
+						<button class="button button-quiet button-small" id="load-example" type="button">
+							<span aria-hidden="true">✦</span> Load example
+						</button>
+					</div>
+					<div class="editor-toolbar">
+						<div class="file-tab"><span class="file-icon">J</span><span id="filename-label">Main.java</span></div>
+						<span id="line-count" class="line-count">1 line</span>
+					</div>
+					<label class="visually-hidden" for="code-input">Java source code</label>
+					<textarea id="code-input" spellcheck="false" autocapitalize="off" autocomplete="off"
+						placeholder="// Paste your Java source here..." aria-describedby="editor-hint"></textarea>
+					<div class="editor-footer">
+						<span id="editor-hint">Your source is analyzed locally and is not stored.</span>
+						<span>UTF-8</span>
+					</div>
+					<div class="editor-actions">
+						<button class="button button-primary" id="analyze-button" type="button">
+							<span class="button-icon" aria-hidden="true">⌕</span>
+							<span id="analyze-label">Analyze code</span>
+						</button>
+						<button class="button button-secondary" id="clear-button" type="button">Clear</button>
+						<span id="request-status" class="request-status" role="status" aria-live="polite"></span>
+					</div>
+				</article>
+
+				<section class="results-panel" aria-labelledby="results-heading">
+					<div class="results-title-row">
+						<div>
+							<p class="eyebrow">ANALYSIS REPORT</p>
+							<h2 id="results-heading">Results</h2>
+						</div>
+						<span id="report-state" class="report-state">Waiting for analysis</span>
+					</div>
+
+					<div class="score-card">
+						<div class="score-ring" id="score-ring" aria-label="No score yet">
+							<div class="score-ring-inner">
+								<strong id="score-value">--</strong>
+								<span>OUT OF 100</span>
+							</div>
+						</div>
+						<div class="score-details">
+							<p class="eyebrow">CODEGUARD SCORE</p>
+							<h3 id="risk-level">Not analyzed</h3>
+							<p id="score-caption">Run an analysis to see your code health score.</p>
+						</div>
+						<div class="score-decoration" aria-hidden="true">✓</div>
+					</div>
+
+					<div class="metrics-grid" aria-label="Issue counts">
+						<div class="metric-card metric-total">
+							<span class="metric-label">Total issues</span>
+							<strong id="total-issues">--</strong>
+						</div>
+						<div class="metric-card metric-critical">
+							<span class="metric-label"><i></i> Critical</span>
+							<strong id="critical-count">--</strong>
+						</div>
+						<div class="metric-card metric-high">
+							<span class="metric-label"><i></i> High</span>
+							<strong id="high-count">--</strong>
+						</div>
+						<div class="metric-card metric-medium">
+							<span class="metric-label"><i></i> Medium</span>
+							<strong id="medium-count">--</strong>
+						</div>
+						<div class="metric-card metric-low">
+							<span class="metric-label"><i></i> Low</span>
+							<strong id="low-count">--</strong>
+						</div>
+					</div>
+				</section>
+			</section>
+
+			<section class="panel findings-panel" aria-labelledby="findings-heading">
+				<div class="findings-heading">
+					<div>
+						<p class="eyebrow">DETAILS</p>
+						<h2 id="findings-heading">Findings <span id="findings-total" class="findings-total">0</span></h2>
+					</div>
+					<span id="findings-summary" class="findings-summary">Run an analysis to see detected issues.</span>
+				</div>
+				<div class="table-scroll">
+					<table>
+						<thead>
+							<tr>
+								<th scope="col">Severity</th>
+								<th scope="col">Rule</th>
+								<th scope="col">Category</th>
+								<th scope="col">Line</th>
+								<th scope="col">Description</th>
+								<th scope="col">Recommendation</th>
+							</tr>
+						</thead>
+						<tbody id="findings-body">
+							<tr class="empty-row">
+								<td colspan="6">
+									<div class="empty-state">
+										<span class="empty-icon" aria-hidden="true">⌕</span>
+										<strong>No analysis results yet</strong>
+										<span>Add Java code above and select Analyze code to begin.</span>
+									</div>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</section>
+			</div>
+
+			<section id="history-page" class="history-page" aria-labelledby="history-heading" hidden>
+				<div class="history-heading">
+					<div>
+						<p class="eyebrow">PAST RESULTS</p>
+						<h1 id="history-heading">Analysis history</h1>
+						<p class="welcome-copy">Review summaries from your recent code analyses.</p>
+					</div>
+					<button class="button button-secondary" id="refresh-history" type="button">
+						<span aria-hidden="true">↻</span> Refresh
+					</button>
+				</div>
+				<div class="panel history-panel">
+					<div class="history-state" id="history-state" role="status" aria-live="polite">
+						<span class="loading-spinner" aria-hidden="true"></span>
+						<span>Loading analysis history...</span>
+					</div>
+					<div class="table-scroll" id="history-table-wrap" hidden>
+						<table class="history-table">
+							<thead>
+								<tr>
+									<th scope="col">Analysis date</th>
+									<th scope="col">Score</th>
+									<th scope="col">Risk level</th>
+									<th scope="col">Issue count</th>
+									<th scope="col"><span class="visually-hidden">View summary</span></th>
+								</tr>
+							</thead>
+							<tbody id="history-body"></tbody>
+						</table>
+					</div>
+				</div>
+			</section>
+
+			<footer class="page-footer">
+				<span><span class="footer-shield">◆</span> CodeGuard AI <span class="footer-divider">/</span> Rule-based analysis</span>
+				<span>Built for safer, cleaner Java</span>
+			</footer>
+		</main>
+	</div>
+
+	<dialog class="summary-dialog" id="summary-dialog" aria-labelledby="summary-title">
+		<div class="summary-dialog-heading">
+			<div>
+				<p class="eyebrow">SAVED REPORT</p>
+				<h2 id="summary-title">Analysis summary</h2>
+			</div>
+			<button class="dialog-close" id="close-summary" type="button" aria-label="Close summary">×</button>
+		</div>
+		<p class="summary-date" id="summary-date"></p>
+		<div class="summary-grid">
+			<div><span>CodeGuard score</span><strong id="summary-score"></strong></div>
+			<div><span>Risk level</span><strong id="summary-risk"></strong></div>
+			<div><span>Total issues</span><strong id="summary-issues"></strong></div>
+			<div><span>Critical</span><strong id="summary-critical"></strong></div>
+			<div><span>High</span><strong id="summary-high"></strong></div>
+			<div><span>Medium</span><strong id="summary-medium"></strong></div>
+			<div><span>Low</span><strong id="summary-low"></strong></div>
+		</div>
+		<p class="summary-note">Source code and individual findings are not stored in analysis history.</p>
+	</dialog>
+</body>
+</html>
