@@ -12,8 +12,6 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class CodeAnalysisService {
 
-	private static final int MAX_SOURCE_LENGTH = 100_000;
-
 	private final CodeAnalyzer codeAnalyzer;
 	private final RiskScoringService riskScoringService;
 	private final AnalysisHistoryService analysisHistoryService;
@@ -31,10 +29,10 @@ public class CodeAnalysisService {
 		if (request == null || request.code() == null) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code must not be null.");
 		}
-		if (request.code().length() > MAX_SOURCE_LENGTH) {
+		if (request.code().length() > CodeAnalysisLimits.MAX_SOURCE_LENGTH) {
 			throw new ResponseStatusException(
 					HttpStatus.CONTENT_TOO_LARGE,
-					"Code must not exceed " + MAX_SOURCE_LENGTH + " characters.");
+					"Code must not exceed " + CodeAnalysisLimits.MAX_SOURCE_LENGTH + " characters.");
 		}
 		if (request.code().isBlank()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Code must not be empty.");

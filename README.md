@@ -1,134 +1,76 @@
 # CodeGuard AI
 
-Rule-based Java source analysis for common security and code-quality issues, with a REST API and web dashboard.
+Rule-based Java source analysis for common security and code-quality issues, delivered through a REST API and web dashboard.
 
-## Overview
+## What it is
 
-Developers need a fast way to identify common security vulnerabilities, bugs, code smells, and quality problems before code ships. CodeGuard AI accepts Java source through an editor, REST endpoint, or `.java` file upload, then reports matches from a focused set of source-level rules with severity, line number, and remediation guidance.
+CodeGuard AI is a small, self-hosted application that analyzes Java source text against a set of focused rules. Developers can paste code into the dashboard, submit it to the API, or upload a `.java` file to receive findings with source line numbers, severity, and rule-provided recommendations.
 
-Analysis is deterministic and rule-based. It is not a Java compiler, static-analysis framework, or AI-powered reviewer; results are limited to the implemented rules and can require human review.
+## The problem it solves
 
-## Features
+Finding common security mistakes, bugs, and code-quality issues during review can be repetitive and easy to overlook. CodeGuard AI provides a quick first-pass check for a small set of recognizable patterns, along with an overall score and a history of analysis summaries.
 
-- Java source analysis through JSON requests and `.java` file uploads
-- Detection of hardcoded passwords and API keys or tokens
-- Detection of `Runtime.exec` use
-- Detection of empty `catch` blocks, TODO/FIXME comments, and `System.out.println`
-- Finding categories and severity classification
-- Risk score from 0 to 100, with a corresponding risk level
-- REST API with OpenAPI documentation and interactive Swagger UI
-- Persistent summaries of successful analyses, without retaining source code or findings
-- Browser dashboard with code editor, example source, result metrics, findings, and history
-- Rule-provided recommendations for detected findings
-- Docker Compose development stack for the API, MySQL, and frontend
+The analyzer is deterministic and rule-based: it is not an AI reviewer, Java compiler, or comprehensive static-analysis engine. Its text-pattern checks can miss issues or report patterns that need human context.
+
+## Implemented features
+
+- Analyze Java source sent as JSON or uploaded as a UTF-8 `.java` file.
+- Detect hardcoded password-like assignments, hardcoded API keys/tokens/secrets, and `Runtime.getRuntime().exec(...)`.
+- Detect empty `catch` blocks, TODO/FIXME comments, and `System.out.println(...)`.
+- Return findings with rule ID, category, severity, line number, description, and remediation recommendation.
+- Calculate a 0–100 score and map it to a risk level.
+- Store and browse analysis summaries; source code and findings are not stored in history.
+- Use the browser dashboard to edit source, load an example, review findings, and inspect history.
+- Browse the API contract through OpenAPI and Swagger UI.
+
+## Technology
+
+- Java 17 and Spring Boot 4
+- Spring MVC REST API
+- Maven and Maven Wrapper
+- Spring Data JPA / Hibernate
+- MySQL for local or containerized application data; H2 for backend tests
+- HTML, CSS, and JavaScript dashboard
+- springdoc-openapi / Swagger UI
+- Docker Compose and Nginx for the optional containerized development stack
+
+There is no external AI or language-model integration in the current implementation.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    Developer[Developer] --> Browser[HTML / CSS / JavaScript dashboard]
-    Browser -->|REST / JSON or multipart upload| API[Spring Boot REST API]
-    API --> Service[Analysis service]
-    Service --> Rules[Java source analyzer and rules]
-    Rules --> Scoring[Severity scoring and risk assessment]
-    Service --> History[Analysis history service]
-    History --> Repository[Spring Data JPA repository]
-    Repository --> Database[(MySQL)]
-    API -. API reference .-> OpenAPI[OpenAPI / Swagger UI]
+    User[Developer] --> UI[Browser dashboard]
+    UI -->|JSON or multipart HTTP| API[Spring Boot REST API]
+    API --> Analysis[Analysis service]
+    Analysis --> Rules[Java source analyzer and rules]
+    Rules --> Score[Risk scoring]
+    Analysis --> History[History service]
+    History --> Repo[Spring Data JPA]
+    Repo --> DB[(MySQL)]
+    API --> Docs[OpenAPI / Swagger UI]
 ```
 
-The analyzer checks source text using the rules in the backend. Successful analyses store summary metrics in the database; source text and individual findings are not retained in history.
+The analyzer evaluates source text in memory. After successful analysis, only summary metrics and the timestamp are persisted for history; the submitted source and individual findings are not.
 
-## Tech Stack
+## Run locally
 
-- **Java 17**
-- **Spring Boot 4** — REST application and runtime
-- **Maven** — build and dependency management; Maven Wrapper included
-- **Spring MVC** — HTTP API
-- **Spring Data JPA / Hibernate** — analysis-history persistence
-- **MySQL 8.4** — local and production database option
-- **H2** — in-memory database for tests
-- **springdoc-openapi** — OpenAPI 3.1 document and Swagger UI
-- **HTML, CSS, JavaScript** — dashboard
-- **Docker, Docker Compose, Nginx** — optional local container stack
+### Requirements
 
-There is no external AI integration in the current implementation. The product name does not imply that findings are generated or explained by an AI model.
+- Java 17
+- MySQL
+- Python 3, or another static-file server, to serve the dashboard
 
-## Project Structure
-
-```text
-.
-├── backend/
-│   ├── Dockerfile
-│   ├── pom.xml
-│   ├── mvnw
-│   └── src/
-│       ├── main/
-│       │   ├── java/com/codeguardai/
-│       │   │   ├── analyzer/       # Analyzer interface and Java rule runner
-│       │   │   ├── config/         # OpenAPI metadata
-│       │   │   ├── controller/     # Health, info, analysis, and history endpoints
-│       │   │   ├── entity/         # Persisted analysis summary
-│       │   │   ├── model/          # Requests, responses, findings, enums
-│       │   │   ├── repository/     # Spring Data repository
-│       │   │   ├── rule/
-│       │   │   │   ├── quality/    # Empty catch, TODO/FIXME, println rules
-│       │   │   │   └── security/   # Password, token, Runtime.exec rules
-│       │   │   └── service/        # Analysis, scoring, and history services
-│       │   └── resources/application.properties
-│       └── test/
-│           ├── java/com/codeguardai/ # Analyzer, service, controller, app tests
-│           └── resources/            # H2 config and representative Java samples
-├── docs/
-│   └── API.md
-├── frontend/
-│   ├── Dockerfile
-│   ├── nginx.conf
-│   ├── index.html
-│   ├── css/style.css
-│   └── js/app.js
-├── docker-compose.yml
-├── .env.example
-└── README.md
-```
-
-## API Endpoints
-
-The API listens on port `8080` by default. Interactive documentation is available at [`/swagger-ui/index.html`](http://localhost:8080/swagger-ui/index.html); the OpenAPI JSON is served at [`/v3/api-docs`](http://localhost:8080/v3/api-docs). Full request, response, and error details are in [docs/API.md](docs/API.md).
-
-| Method | Endpoint | Purpose | Common errors |
-| --- | --- | --- | --- |
-| `GET` | `/api/health` | Service health | `500` unexpected server error |
-| `GET` | `/api/info` | Public project metadata | `500` unexpected server error |
-| `POST` | `/api/analyze` | Analyze JSON Java source | `400` invalid/blank code; `413` source too large; `500` processing or persistence failure |
-| `POST` | `/api/analyze/file` | Analyze UTF-8 `.java` multipart upload | `400` invalid file; `413` upload too large; `500` read or persistence failure |
-| `GET` | `/api/analyses` | List saved summaries, newest first | `500` history read failure |
-| `GET` | `/api/analyses/{id}` | Fetch one saved summary | `400` invalid identifier; `404` not found; `500` history read failure |
-
-Example JSON request:
-
-```json
-{
-  "code": "public class Example {\n    private String password = \"admin123\";\n}"
-}
-```
-
-The file endpoint expects a multipart part named `file`, a `.java` filename, valid UTF-8, and a file of at most 100,000 bytes. The multipart request limit is 120 KB. Successful analysis responses include the score, risk level, severity counts, and findings; a finding contains its rule ID, category, severity, source line, description, and recommendation.
-
-## How to Run
-
-### 1. Clone
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/HimajaVentakaReddy/CodeGuard-AI.git
 cd CodeGuard-AI
 ```
 
-### 2. Database
+### 2. Create a MySQL database
 
-Requirements for the normal local workflow: Java 17, MySQL, and Python 3 (or another static HTTP server).
-
-Create a local MySQL database and application user:
+Create a local database and application user:
 
 ```sql
 CREATE DATABASE codeguard_ai;
@@ -136,9 +78,9 @@ CREATE USER 'codeguard_app'@'localhost' IDENTIFIED BY 'choose-a-local-password';
 GRANT ALL PRIVILEGES ON codeguard_ai.* TO 'codeguard_app'@'localhost';
 ```
 
-### 3. Environment variables
+### 3. Configure the backend environment
 
-Set the database connection variables in the shell where the backend will run.
+`DB_USERNAME` and `DB_PASSWORD` are required. `DB_URL` defaults to the local URL below, and `DB_DDL_AUTO` defaults to `update` for development.
 
 PowerShell:
 
@@ -156,45 +98,70 @@ export DB_USERNAME="codeguard_app"
 export DB_PASSWORD="your-local-password"
 ```
 
-`DB_USERNAME` and `DB_PASSWORD` are required. `DB_URL` defaults to the local MySQL URL above; `DB_DDL_AUTO` defaults to `update` for local development. Use a migration strategy and least-privilege database account for production.
+Do not commit real credentials. For production, provide secrets using the deployment platform and use an appropriately restricted database account and schema migration process.
 
-### 4. Backend
+### 4. Start the backend
 
-Start the backend:
+From the repository root:
 
 ```powershell
 cd backend
 .\mvnw.cmd spring-boot:run
 ```
 
-### 5. Frontend
+The API listens at `http://localhost:8080` by default.
 
-In a second terminal, start the frontend static server from the repository root:
+### 5. Start the frontend
+
+In a second terminal, from the repository root:
 
 ```powershell
 cd frontend
 python -m http.server 5500
 ```
 
-Open `http://localhost:5500`. The dashboard calls the API at `http://localhost:8080`.
+Open `http://localhost:5500`. The dashboard is configured to call the backend at `http://localhost:8080`.
 
-### 6. Docker Compose (optional)
+### Optional: Docker Compose
 
-Requirements: Docker Engine/Desktop with the Compose plugin. From the repository root, copy `.env.example` to `.env` and replace its placeholder values with local-only credentials:
+Docker Engine/Desktop with the Compose plugin is required. From the repository root, copy `.env.example` to `.env`, replace the placeholder values with local development credentials, then start the stack:
 
 ```powershell
 Copy-Item .env.example .env
-# Edit .env before starting the stack.
+# Edit .env and replace the placeholder values.
 docker compose up --build
 ```
 
-Compose builds the backend and Nginx frontend, starts MySQL, waits for its health check before starting the backend, and uses a persistent `mysql_data` volume. The frontend is at `http://localhost:5500`; the backend is at `http://localhost:8080`. Use `docker compose ps` to inspect service health and `docker compose down` to stop the stack while preserving database data. `docker compose down --volumes` also deletes the local database volume.
+Compose runs MySQL with a persistent `mysql_data` volume, the backend, and an Nginx frontend. The frontend is served on port 5500 and the backend on port 8080. Use `docker compose ps` to inspect service health and `docker compose down` to stop services while preserving database data. `docker compose down --volumes` also removes the database volume.
 
-The checked-in `.env.example` contains placeholders, not production secrets. `.env` is ignored by Git. Never deploy these example credentials; inject production secrets through an appropriate secret manager.
+`.env` is ignored by Git. The checked-in `.env.example` contains placeholders for local development only, not production secrets.
 
-## Example Analysis
+## API
 
-Example source:
+The API listens on port 8080 by default.
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/api/health` | Service health status |
+| `GET` | `/api/info` | Application name, version, and description |
+| `POST` | `/api/analyze` | Analyze JSON Java source |
+| `POST` | `/api/analyze/file` | Analyze a multipart `.java` file |
+| `GET` | `/api/analyses` | List saved summaries, newest first |
+| `GET` | `/api/analyses/{id}` | Retrieve one saved summary |
+
+OpenAPI JSON is available at `http://localhost:8080/v3/api-docs`; Swagger UI is at `http://localhost:8080/swagger-ui/index.html`. Request and response formats and error cases are described in [docs/API.md](docs/API.md).
+
+### Example request
+
+```bash
+curl -X POST http://localhost:8080/api/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"code":"public class Example {\\n  private String password = \\"admin123\\";\\n}"}'
+```
+
+## Example analysis workflow
+
+Submit Java source containing recognizable issues:
 
 ```java
 public class ExampleService {
@@ -206,40 +173,16 @@ public class ExampleService {
 }
 ```
 
-The implemented rules report:
+The response includes a `SEC001` high-severity hardcoded-password finding and a `QUAL003` low-severity `System.out.println` finding, each with a line number and recommendation. It also includes the overall score and risk level. The successful analysis summary appears in history, but the source and findings are not retained there.
 
-- `SEC001` — hardcoded password, `HIGH`, line 2. Recommendation: load the value from a secret store or environment variable.
-- `QUAL003` — `System.out.println` use, `LOW`, line 5. Recommendation: use a logging framework.
+## Current project status
 
-These are text-pattern checks, not a full Java semantic analysis; review the source and findings in context.
+CodeGuard AI is an implemented, rule-based MVP with backend tests, a browser dashboard, analysis-summary persistence, documented REST endpoints, and Docker Compose configuration. Its rule coverage is intentionally limited to the patterns listed above; it does not compile source, perform comprehensive semantic analysis, provide authentication, or use AI-generated findings.
 
-## Screenshots
-
-Screenshots can be added here as the dashboard evolves.
-
-| Dashboard | Analysis findings | Analysis history |
-| --- | --- | --- |
-| _Add screenshot_ | _Add screenshot_ | _Add screenshot_ |
-
-## Future Improvements
-
-- Add parser-based analysis for more accurate Java syntax and context.
-- Expand rule coverage and configurable rule sets.
-- Add CI integration and machine-readable report export.
-- Add optional, clearly labeled AI-assisted explanations with privacy controls.
-- Add authentication and authorization if deployed for multiple users.
-
-## Testing
-
-Run the full backend suite, including analyzer rules, scoring, request validation, upload handling, controllers, OpenAPI endpoints, and H2-backed history persistence:
+Run backend tests from the `backend` directory:
 
 ```powershell
-cd backend
 .\mvnw.cmd test
 ```
 
-The tests use an in-memory H2 database and do not require a running MySQL server.
-
-## Author
-
-Himaja Venkata Reddy
+The test suite uses an in-memory H2 database and does not require MySQL.

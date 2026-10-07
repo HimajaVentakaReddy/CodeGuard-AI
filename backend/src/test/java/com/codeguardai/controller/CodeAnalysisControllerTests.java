@@ -74,6 +74,19 @@ class CodeAnalysisControllerTests {
 	}
 
 	@Test
+	void returnsConsistentJsonForEmptyAndBlankCode() throws Exception {
+		for (String code : new String[] {"", "  \\n\\t "}) {
+			mockMvc.perform(post("/api/analyze")
+							.contentType(MediaType.APPLICATION_JSON)
+							.content("{\"code\":\"" + code + "\"}"))
+					.andExpect(status().isBadRequest())
+					.andExpect(jsonPath("$.status").value(400))
+					.andExpect(jsonPath("$.error").value("Bad Request"))
+					.andExpect(jsonPath("$.message").value("Code must not be empty."));
+		}
+	}
+
+	@Test
 	void returnsVulnerabilityFindingsAndSeverityCounts() throws Exception {
 		mockMvc.perform(post("/api/analyze")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -109,7 +122,10 @@ class CodeAnalysisControllerTests {
 		mockMvc.perform(post("/api/analyze")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"code\":null}"))
-				.andExpect(status().isBadRequest());
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status").value(400))
+				.andExpect(jsonPath("$.error").value("Bad Request"))
+				.andExpect(jsonPath("$.message").value("Code must not be null."));
 	}
 
 	@Test
@@ -117,7 +133,9 @@ class CodeAnalysisControllerTests {
 		mockMvc.perform(post("/api/analyze")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{\"code\":\"  \\n  \"}"))
-				.andExpect(status().isBadRequest());
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status").value(400))
+				.andExpect(jsonPath("$.message").value("Code must not be empty."));
 	}
 
 	@Test
@@ -128,7 +146,22 @@ class CodeAnalysisControllerTests {
 		mockMvc.perform(post("/api/analyze")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(requestBody))
-						.andExpect(status().is(413));
+				.andExpect(status().is(413))
+				.andExpect(jsonPath("$.status").value(413))
+				.andExpect(jsonPath("$.error").value("Content Too Large"))
+				.andExpect(jsonPath("$.message").value("Code must not exceed 100000 characters."));
+	}
+
+	@Test
+	void returnsConsistentJsonForMalformedJson() throws Exception {
+		mockMvc.perform(post("/api/analyze")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{invalid-json"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status").value(400))
+				.andExpect(jsonPath("$.error").value("Bad Request"))
+				.andExpect(jsonPath("$.message")
+						.value("Request body must contain valid JSON for this endpoint."));
 	}
 
 	@Test
@@ -156,7 +189,10 @@ class CodeAnalysisControllerTests {
 		mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 						.multipart("/api/analyze/file")
 						.file(file))
-				.andExpect(status().isBadRequest());
+						.andExpect(status().isBadRequest())
+						.andExpect(jsonPath("$.status").value(400))
+						.andExpect(jsonPath("$.error").value("Bad Request"))
+						.andExpect(jsonPath("$.message").value("Only .java files are allowed."));
 	}
 
 	@Test
@@ -167,7 +203,24 @@ class CodeAnalysisControllerTests {
 		mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 						.multipart("/api/analyze/file")
 						.file(file))
-				.andExpect(status().isBadRequest());
+						.andExpect(status().isBadRequest())
+						.andExpect(jsonPath("$.status").value(400))
+						.andExpect(jsonPath("$.error").value("Bad Request"))
+						.andExpect(jsonPath("$.message").value("Uploaded file must not be empty."));
+	}
+
+	@Test
+	void rejectsUploadedFileWithBlankSource() throws Exception {
+		MockMultipartFile file = new MockMultipartFile(
+				"file", "Blank.java", "text/plain", new byte[] {' ', '\n', '\t', ' '});
+
+		mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+								.multipart("/api/analyze/file")
+								.file(file))
+						.andExpect(status().isBadRequest())
+						.andExpect(jsonPath("$.status").value(400))
+						.andExpect(jsonPath("$.error").value("Bad Request"))
+						.andExpect(jsonPath("$.message").value("Code must not be empty."));
 	}
 
 	@Test
@@ -181,7 +234,10 @@ class CodeAnalysisControllerTests {
 		mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 						.multipart("/api/analyze/file")
 						.file(file))
-				.andExpect(status().is(413));
+						.andExpect(status().is(413))
+						.andExpect(jsonPath("$.status").value(413))
+						.andExpect(jsonPath("$.error").value("Content Too Large"))
+						.andExpect(jsonPath("$.message").value("Uploaded file must not exceed 100000 bytes."));
 	}
 
 	@Test
@@ -192,7 +248,20 @@ class CodeAnalysisControllerTests {
 		mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 						.multipart("/api/analyze/file")
 						.file(file))
-				.andExpect(status().isBadRequest());
+						.andExpect(status().isBadRequest())
+						.andExpect(jsonPath("$.status").value(400))
+						.andExpect(jsonPath("$.error").value("Bad Request"))
+						.andExpect(jsonPath("$.message").value("Uploaded file must contain valid UTF-8 text."));
+	}
+
+	@Test
+	void returnsConsistentJsonWhenUploadPartIsMissing() throws Exception {
+		mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+								.multipart("/api/analyze/file"))
+						.andExpect(status().isBadRequest())
+						.andExpect(jsonPath("$.status").value(400))
+						.andExpect(jsonPath("$.error").value("Bad Request"))
+						.andExpect(jsonPath("$.message").value("Required multipart file part is missing."));
 	}
 
 	private String readSample(String fileName) throws Exception {

@@ -1,31 +1,33 @@
-# CodeGuard AI API
+# CodeGuard AI REST API
 
-CodeGuard AI exposes a JSON REST API for Java source analysis and read-only access to analysis summaries. The service listens on port `8080` by default.
+CodeGuard AI provides endpoints for service metadata, rule-based Java source analysis, and reading saved analysis summaries. The API listens on port `8080` by default.
 
-## Interactive reference
+## API reference
 
-The running application publishes an OpenAPI 3.1 document and Swagger UI:
+When the backend is running:
 
-- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
-- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+- Swagger UI: <http://localhost:8080/swagger-ui/index.html>
+- OpenAPI JSON: <http://localhost:8080/v3/api-docs>
 
-All endpoints are unauthenticated. Analysis requests are persisted as summaries; source code and individual findings are not stored.
+## General behavior
 
-## Common response conventions
-
-- JSON endpoints use `Content-Type: application/json`.
-- Severity values are `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, or `INFO`.
-- Risk levels are `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, or `GOOD`.
-- Error responses use the standard Spring Boot error response. Clients should rely on the HTTP status and treat the response detail as diagnostic text.
-- Successful analysis responses include every finding in the response, but history stores only the score, risk level, counts, and analysis timestamp.
+- Analysis requests return JSON. Send JSON requests with `Content-Type: application/json`.
+- A successful analysis is saved to history as a summary. The source code and individual findings are not stored in history.
+- Analysis summaries are returned newest first.
+- Validation failures and other errors use Spring's standard error response format. The `detail` text may describe the failure; clients should use the HTTP status as the stable signal.
+- The API has **no authentication or authorization**. CORS is explicitly enabled for `http://localhost:5500` and `http://127.0.0.1:5500` on the analysis and history controllers; CORS is not configured as an authentication mechanism.
 
 ## `GET /api/health`
 
-Checks that the service is running.
+Reports the service's current status. This endpoint does not check database connectivity.
 
 ### Request
 
 No body or parameters.
+
+```bash
+curl http://localhost:8080/api/health
+```
 
 ### `200 OK`
 
@@ -42,11 +44,15 @@ No body or parameters.
 
 ## `GET /api/info`
 
-Returns public application metadata.
+Returns the configured public name, version, and description of the application.
 
 ### Request
 
 No body or parameters.
+
+```bash
+curl http://localhost:8080/api/info
+```
 
 ### `200 OK`
 
@@ -64,50 +70,80 @@ No body or parameters.
 
 ## `POST /api/analyze`
 
-Analyzes Java source sent as JSON. A successful analysis is added to history.
+Analyzes Java source text using the implemented source-pattern rules and saves an analysis summary.
 
 ### Request
 
-`Content-Type: application/json`
+Content type: `application/json`.
+
+The body must be a JSON object with a non-null, non-blank `code` string. The source is limited to 100,000 characters.
+
+```bash
+curl -X POST http://localhost:8080/api/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"code":"public class Example {\\n    private String password = \\"admin123\\";\\n}"}'
+```
+
+Request body:
 
 ```json
 {
-  "code": "public class Example {\\n    public void run() {}\\n}"
+  "code": "public class Example {\n    private String password = \"admin123\";\n}"
 }
 ```
-
-`code` must be non-null, non-blank Java source and no longer than 100,000 characters.
 
 ### `200 OK`
 
+Returns the score, risk level, issue counts, and all findings from this analysis. Finding line numbers are one-based.
+
 ```json
 {
-  "score": 100,
+  "score": 85,
   "riskLevel": "GOOD",
-  "totalIssues": 0,
+  "totalIssues": 1,
   "criticalCount": 0,
-  "highCount": 0,
+  "highCount": 1,
   "mediumCount": 0,
   "lowCount": 0,
-  "findings": []
+  "findings": [
+    {
+      "ruleId": "SEC001",
+      "title": "Hardcoded password",
+      "description": "A password-like variable is assigned a string literal.",
+      "category": "SECURITY",
+      "severity": "HIGH",
+      "lineNumber": 2,
+      "recommendation": "Load the password from a secure secret store or environment variable."
+    }
+  ]
 }
 ```
 
-Each finding contains `ruleId`, `title`, `description`, `category`, `severity`, `lineNumber`, and `recommendation`. `category` is the applicable issue category, such as `SECURITY`, `BUG`, or `STYLE`.
+The current rules recognize hardcoded password-like and API key/token/secret assignments, `Runtime.getRuntime().exec(...)`, empty catch blocks, TODO/FIXME comments, and `System.out.println(...)`. Risk scores are capped between 0 and 100; deductions are 25 per critical, 15 per high, 8 per medium, and 3 per low finding. INFO findings do not reduce the score.
 
 ### Errors
 
-- `400 Bad Request` — request body is malformed, `code` is missing or null, or source is blank.
-- `413 Content Too Large` — source exceeds 100,000 characters or the request exceeds the configured request size.
-- `500 Internal Server Error` — unexpected analysis or history-persistence error.
+- `400 Bad Request` — `code` is missing or null, or its value is empty or whitespace-only. Malformed JSON is also rejected as a bad request.
+- `413 Content Too Large` — source exceeds 100,000 characters.
+- `500 Internal Server Error` — an unexpected analysis or history-persistence failure occurs.
 
 ## `POST /api/analyze/file`
 
-Analyzes an uploaded UTF-8 Java source file. A successful analysis is added to history.
+Analyzes an uploaded Java source file as UTF-8 and saves an analysis summary.
 
 ### Request
 
-`Content-Type: multipart/form-data`, with one file part named `file`. The filename must end in `.java`; the file must contain non-empty, valid UTF-8 source. The maximum file size is 100,000 bytes and the configured multipart request maximum is 120 KB.
+Content type: `multipart/form-data`. Include one file part named `file`.
+
+Requirements:
+
+- Original filename ends in `.java` (case-insensitive).
+- File is non-empty and contains valid UTF-8 text.
+- File size does not exceed 100,000 bytes.
+- Multipart request size does not exceed the configured 120 KB limit.
+- Decoded source is non-blank and no longer than 100,000 characters.
+
+Example:
 
 ```bash
 curl -X POST http://localhost:8080/api/analyze/file \
@@ -116,25 +152,29 @@ curl -X POST http://localhost:8080/api/analyze/file \
 
 ### `200 OK`
 
-Returns the same response shape as [`POST /api/analyze`](#post-apianalyze).
+Returns the same response structure as [`POST /api/analyze`](#post-apianalyze), including findings for this request.
 
 ### Errors
 
-- `400 Bad Request` — file is missing or empty, filename is not `.java`, uploaded content is not valid UTF-8, or decoded source is blank.
-- `413 Content Too Large` — file exceeds 100,000 bytes or multipart request exceeds 120 KB.
-- `500 Internal Server Error` — upload could not be read or the analysis could not be persisted.
+- `400 Bad Request` — file part is missing or empty, filename is not `.java`, content is invalid UTF-8, or decoded source is blank.
+- `413 Content Too Large` — file exceeds 100,000 bytes, decoded source exceeds 100,000 characters, or multipart request exceeds 120 KB.
+- `500 Internal Server Error` — uploaded contents cannot be read or an unexpected persistence error occurs.
 
 ## `GET /api/analyses`
 
-Lists saved analysis summaries, newest first.
+Lists saved analysis summaries in most-recent-first order. The response does not include source code or findings.
 
 ### Request
 
 No body or parameters.
 
+```bash
+curl http://localhost:8080/api/analyses
+```
+
 ### `200 OK`
 
-Returns an array. An empty history is returned as `[]`.
+Returns a JSON array; no saved analyses is represented by an empty array.
 
 ```json
 [
@@ -154,22 +194,30 @@ Returns an array. An empty history is returned as `[]`.
 
 ### Errors
 
-- `500 Internal Server Error` — analysis history could not be read.
+- `500 Internal Server Error` — an unexpected history read failure occurs.
 
 ## `GET /api/analyses/{id}`
 
-Returns one saved analysis summary. The path parameter `id` is a numeric analysis identifier.
+Returns one saved analysis summary by its numeric database identifier. Source code and individual findings are not included.
 
 ### Request
 
-No body. Example: `GET /api/analyses/42`.
+Path parameter:
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | Integer (`Long`) | Yes | Identifier of the saved analysis |
+
+```bash
+curl http://localhost:8080/api/analyses/42
+```
 
 ### `200 OK`
 
-Returns one summary with the same fields as an item in [`GET /api/analyses`](#get-apianalyses).
+Returns one summary object with the same fields as an item from [`GET /api/analyses`](#get-apianalyses).
 
 ### Errors
 
-- `400 Bad Request` — `id` is not a valid integer.
-- `404 Not Found` — no saved analysis has that identifier.
-- `500 Internal Server Error` — analysis history could not be read.
+- `400 Bad Request` — `id` cannot be converted to an integer.
+- `404 Not Found` — no analysis exists for the supplied numeric identifier.
+- `500 Internal Server Error` — an unexpected history read failure occurs.

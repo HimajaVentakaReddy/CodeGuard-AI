@@ -10,6 +10,7 @@ import java.util.Locale;
 import com.codeguardai.model.CodeAnalysisRequest;
 import com.codeguardai.model.CodeAnalysisResponse;
 import com.codeguardai.service.CodeAnalysisService;
+import com.codeguardai.service.CodeAnalysisLimits;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -30,8 +31,6 @@ import org.springframework.web.server.ResponseStatusException;
 @CrossOrigin(origins = {"http://localhost:5500", "http://127.0.0.1:5500"})
 @Tag(name = "Analysis", description = "Analyze Java source code")
 public class CodeAnalysisController {
-
-	private static final long MAX_FILE_SIZE_BYTES = 100_000;
 
 	private final CodeAnalysisService codeAnalysisService;
 
@@ -93,10 +92,10 @@ public class CodeAnalysisController {
 		if (file == null || file.isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Uploaded file must not be empty.");
 		}
-		if (file.getSize() > MAX_FILE_SIZE_BYTES) {
+		if (file.getSize() > CodeAnalysisLimits.MAX_FILE_SIZE_BYTES) {
 			throw new ResponseStatusException(
 					HttpStatus.CONTENT_TOO_LARGE,
-					"Uploaded file must not exceed " + MAX_FILE_SIZE_BYTES + " bytes.");
+					"Uploaded file must not exceed " + CodeAnalysisLimits.MAX_FILE_SIZE_BYTES + " bytes.");
 		}
 
 		String filename = file.getOriginalFilename();
