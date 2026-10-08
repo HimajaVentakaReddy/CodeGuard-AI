@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/analyses")
-@CrossOrigin(origins = {"http://localhost:5500", "http://127.0.0.1:5500"})
+@CrossOrigin(origins = {"http://localhost:5500", "http://127.0.0.1:5500", "https://himajaventakareddy.github.io"})
 @Tag(name = "History", description = "Read saved analysis summaries")
 public class AnalysisHistoryController {
 

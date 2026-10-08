@@ -28,7 +28,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = {"http://localhost:5500", "http://127.0.0.1:5500"})
+@CrossOrigin(origins = {"http://localhost:5500", "http://127.0.0.1:5500", "https://himajaventakareddy.github.io"})
 @Tag(name = "Analysis", description = "Analyze Java source code")
 public class CodeAnalysisController {
 
