@@ -17,6 +17,7 @@ import com.codeguardai.rule.quality.TodoCommentRule;
 import com.codeguardai.rule.security.DangerousRuntimeExecutionRule;
 import com.codeguardai.rule.security.HardcodedApiKeyRule;
 import com.codeguardai.rule.security.HardcodedPasswordRule;
+import com.codeguardai.rule.security.ProcessBuilderExecutionRule;
 import org.junit.jupiter.api.Test;
 
 class JavaCodeAnalyzerTests {
@@ -25,6 +26,7 @@ class JavaCodeAnalyzerTests {
 			new HardcodedPasswordRule(),
 			new HardcodedApiKeyRule(),
 			new DangerousRuntimeExecutionRule(),
+			new ProcessBuilderExecutionRule(),
 			new EmptyCatchBlockRule(),
 			new TodoCommentRule(),
 			new SystemOutPrintlnRule()));
@@ -71,6 +73,28 @@ class JavaCodeAnalyzerTests {
 		assertEquals("SEC003", finding.ruleId());
 		assertEquals(3, finding.lineNumber());
 		assertEquals(Severity.HIGH, finding.severity());
+	}
+
+	@Test
+	void detectsStartedProcessBuilderCommands() {
+		AnalysisResult result = analyzer.analyze("""
+				ProcessBuilder direct = new ProcessBuilder("sh", "-c", command);
+				direct.start();
+				new ProcessBuilder("git", "status").start();
+				""");
+
+		assertEquals(2, result.totalIssues());
+		assertEquals(List.of(2, 3), result.findings().stream().map(Finding::lineNumber).toList());
+		assertTrue(result.findings().stream().allMatch(finding -> finding.ruleId().equals("SEC004")));
+		assertTrue(result.findings().stream().allMatch(finding -> finding.severity() == Severity.HIGH));
+	}
+
+	@Test
+	void doesNotFlagProcessBuilderThatIsNotStarted() {
+		AnalysisResult result = analyzer.analyze(
+				"ProcessBuilder builder = new ProcessBuilder(\"git\", \"status\");");
+
+		assertEquals(0, result.totalIssues());
 	}
 
 	@Test
