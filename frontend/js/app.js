@@ -52,6 +52,7 @@ const historyElements = {
 	state: document.querySelector("#history-state"),
 	tableWrap: document.querySelector("#history-table-wrap"),
 	refreshButton: document.querySelector("#refresh-history"),
+	exportButton: document.querySelector("#export-history"),
 	dialog: document.querySelector("#summary-dialog"),
 	closeDialog: document.querySelector("#close-summary"),
 	summaryDate: document.querySelector("#summary-date"),
@@ -65,6 +66,7 @@ const historyElements = {
 };
 
 let currentFindings = [];
+let currentHistory = [];
 
 function updateLineCount() {
 	const count = elements.codeInput.value ? elements.codeInput.value.split(/\r\n|\r|\n/).length : 1;
@@ -330,8 +332,54 @@ function appendHistoryRow(analysis) {
 	historyElements.body.append(row);
 }
 
+function csvField(value) {
+	return `"${String(value ?? "").replaceAll('"', '""')}"`;
+}
+
+function exportHistoryCsv() {
+	if (!currentHistory.length) {
+		return;
+	}
+
+	const columns = [
+		"Analysis ID",
+		"Analyzed at",
+		"Score",
+		"Risk level",
+		"Total issues",
+		"Critical",
+		"High",
+		"Medium",
+		"Low"
+	];
+	const rows = currentHistory.map(analysis => [
+		analysis.id,
+		analysis.analyzedAt,
+		analysis.score,
+		analysis.riskLevel,
+		analysis.totalIssues,
+		analysis.criticalCount,
+		analysis.highCount,
+		analysis.mediumCount,
+		analysis.lowCount
+	]);
+	const csv = [columns, ...rows]
+		.map(row => row.map(csvField).join(","))
+		.join("\r\n");
+	const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+	const download = document.createElement("a");
+	download.href = url;
+	download.download = `codeguard-history-${new Date().toISOString().replaceAll(":", "-")}.csv`;
+	document.body.append(download);
+	download.click();
+	download.remove();
+	setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 async function loadHistory() {
 	historyElements.refreshButton.disabled = true;
+	historyElements.exportButton.disabled = true;
+	currentHistory = [];
 	setHistoryState("Loading analysis history...", "loading");
 
 	try {
@@ -350,6 +398,8 @@ async function loadHistory() {
 			return;
 		}
 
+		currentHistory = payload;
+		historyElements.exportButton.disabled = false;
 		for (const analysis of payload) {
 			appendHistoryRow(analysis);
 		}
@@ -460,6 +510,7 @@ elements.categoryFilter.addEventListener("change", () => renderFindings(currentF
 historyElements.dashboardNav.addEventListener("click", () => showPage("dashboard"));
 historyElements.historyNav.addEventListener("click", () => showPage("history"));
 historyElements.refreshButton.addEventListener("click", loadHistory);
+historyElements.exportButton.addEventListener("click", exportHistoryCsv);
 historyElements.body.addEventListener("click", event => {
 	const button = event.target.closest("button[data-analysis-id]");
 	if (button) {

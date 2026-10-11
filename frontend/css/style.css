@@ -664,6 +664,17 @@ textarea::placeholder {
 	margin-bottom: 0;
 }
 
+.history-actions {
+	display: flex;
+	gap: 8px;
+}
+
+.history-export-note {
+	margin: -16px 0 14px;
+	color: var(--subtle);
+	font-size: 10px;
+}
+
 .history-panel {
 	overflow: hidden;
 	min-height: 245px;
@@ -1254,6 +1265,15 @@ td:nth-child(2) {
 
 	.history-heading {
 		align-items: flex-start;
+		flex-wrap: wrap;
+	}
+
+	.history-actions {
+		width: 100%;
+	}
+
+	.history-export-note {
+		margin-top: -14px;
 	}
 
 	.history-heading h1 {

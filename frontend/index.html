@@ -188,12 +188,18 @@
 					<div>
 						<p class="eyebrow">PAST RESULTS</p>
 						<h1 id="history-heading">Analysis history</h1>
-						<p class="welcome-copy">Review summaries from your recent code analyses.</p>
+						<p class="welcome-copy">Review and export summary metrics from your recent analyses.</p>
 					</div>
-					<button class="button button-secondary" id="refresh-history" type="button">
-						<span aria-hidden="true">↻</span> Refresh
-					</button>
+					<div class="history-actions">
+						<button class="button button-secondary" id="export-history" type="button" disabled>
+							Download CSV
+						</button>
+						<button class="button button-secondary" id="refresh-history" type="button">
+							<span aria-hidden="true">↻</span> Refresh
+						</button>
+					</div>
 				</div>
+				<p class="history-export-note">Exports include summary metrics only; source code and findings are not stored in history.</p>
 				<div class="panel history-panel">
 					<div class="history-state" id="history-state" role="status" aria-live="polite">
 						<span class="loading-spinner" aria-hidden="true"></span>
