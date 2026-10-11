@@ -993,10 +993,22 @@ td:nth-child(4) {
 }
 
 td:nth-child(2) {
+	min-width: 125px;
+}
+
+.finding-title {
+	display: block;
 	color: #d7def0;
+	font-size: 11px;
+	font-weight: 600;
+}
+
+.finding-rule-id {
+	display: block;
+	margin-top: 3px;
+	color: var(--subtle);
 	font-family: "DM Mono", Consolas, monospace;
-	font-size: 10px;
-	white-space: nowrap;
+	font-size: 9px;
 }
 
 .severity-badge {

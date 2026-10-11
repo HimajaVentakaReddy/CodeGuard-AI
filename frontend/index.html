@@ -98,7 +98,7 @@
 						<div class="score-decoration" aria-hidden="true">✓</div>
 					</div>
 
-					<div class="metrics-grid" aria-label="Issue counts">
+					<div class="metrics-grid" aria-label="Analysis metrics">
 						<div class="metric-card metric-total">
 							<span class="metric-label">Total issues</span>
 							<strong id="total-issues">--</strong>
@@ -118,6 +118,14 @@
 						<div class="metric-card metric-low">
 							<span class="metric-label"><i></i> Low</span>
 							<strong id="low-count">--</strong>
+						</div>
+						<div class="metric-card metric-context">
+							<span class="metric-label">Source lines</span>
+							<strong id="source-lines">--</strong>
+						</div>
+						<div class="metric-card metric-context" title="Findings divided by physical source lines, scaled to 100 lines.">
+							<span class="metric-label">Issues / 100 lines</span>
+							<strong id="issue-density">--</strong>
 						</div>
 					</div>
 				</section>
@@ -160,7 +168,7 @@
 						<thead>
 							<tr>
 								<th scope="col">Severity</th>
-								<th scope="col">Rule</th>
+								<th scope="col">Finding</th>
 								<th scope="col">Category</th>
 								<th scope="col">Line</th>
 								<th scope="col">Description</th>

@@ -40,6 +40,8 @@ const elements = {
 	scoreCaption: document.querySelector("#score-caption"),
 	scoreRing: document.querySelector("#score-ring"),
 	scoreValue: document.querySelector("#score-value"),
+	sourceLines: document.querySelector("#source-lines"),
+	issueDensity: document.querySelector("#issue-density"),
 	totalIssues: document.querySelector("#total-issues")
 };
 
@@ -69,8 +71,17 @@ let currentFindings = [];
 let currentHistory = [];
 
 function updateLineCount() {
-	const count = elements.codeInput.value ? elements.codeInput.value.split(/\r\n|\r|\n/).length : 1;
+	const count = countSourceLines(elements.codeInput.value) || 1;
 	elements.lineCount.textContent = `${count} ${count === 1 ? "line" : "lines"}`;
+}
+
+function countSourceLines(source) {
+	if (!source) {
+		return 0;
+	}
+
+	const lines = source.split(/\r\n|\r|\n/);
+	return lines.length - (/\r\n|\r|\n$/.test(source) ? 1 : 0);
 }
 
 function setRequestStatus(message, state = "") {
@@ -144,9 +155,19 @@ function renderFindings(findings) {
 		badge.textContent = finding.severity ?? "INFO";
 		badgeCell.append(badge);
 
+		const findingCell = document.createElement("td");
+		findingCell.className = "finding-cell";
+		const title = document.createElement("strong");
+		title.className = "finding-title";
+		title.textContent = finding.title ?? "Untitled finding";
+		const ruleId = document.createElement("span");
+		ruleId.className = "finding-rule-id";
+		ruleId.textContent = finding.ruleId ?? "";
+		findingCell.append(title, ruleId);
+
 		row.append(
 			badgeCell,
-			createCell(finding.ruleId),
+			findingCell,
 			createCell(finding.category),
 			createCell(finding.lineNumber),
 			createCell(finding.description),
@@ -156,24 +177,29 @@ function renderFindings(findings) {
 	}
 }
 
-function displayResult(result) {
+function displayResult(result, analyzedSource) {
 	const score = Math.max(0, Math.min(100, Number(result.score) || 0));
 	const riskLevel = String(result.riskLevel ?? "UNKNOWN");
 	const findings = Array.isArray(result.findings) ? result.findings : [];
+	const sourceLines = countSourceLines(analyzedSource);
 
 	elements.scoreValue.textContent = String(score);
 	elements.scoreRing.style.setProperty("--score-angle", `${score * 3.6}deg`);
-	elements.scoreRing.style.setProperty("--score-color", scoreColor(score));
+	elements.scoreRing.style.setProperty("--score-color", scoreColor(riskLevel));
 	elements.scoreRing.setAttribute("aria-label", `CodeGuard score ${score} out of 100`);
 	elements.riskLevel.textContent = `${riskLevel} RISK`;
 	elements.riskLevel.dataset.risk = riskLevel.toLowerCase();
-	elements.scoreCaption.textContent = scoreMessage(score);
+	elements.scoreCaption.textContent = scoreMessage(riskLevel);
 
 	elements.totalIssues.textContent = result.totalIssues ?? findings.length;
 	elements.criticalCount.textContent = result.criticalCount ?? 0;
 	elements.highCount.textContent = result.highCount ?? 0;
 	elements.mediumCount.textContent = result.mediumCount ?? 0;
 	elements.lowCount.textContent = result.lowCount ?? 0;
+	elements.sourceLines.textContent = String(sourceLines);
+	elements.issueDensity.textContent = sourceLines
+		? (findings.length * 100 / sourceLines).toFixed(1)
+		: "0.0";
 
 	elements.reportState.textContent = "Analysis complete";
 	elements.reportState.classList.add("ready");
@@ -183,20 +209,26 @@ function displayResult(result) {
 	renderFindings(findings);
 }
 
-function scoreColor(score) {
-	if (score <= 20) return "var(--red)";
-	if (score <= 40) return "var(--orange)";
-	if (score <= 60) return "var(--yellow)";
-	if (score <= 80) return "var(--blue)";
-	return "var(--green)";
+function scoreColor(riskLevel) {
+	switch (riskLevel) {
+		case "CRITICAL": return "var(--red)";
+		case "HIGH": return "var(--orange)";
+		case "MEDIUM": return "var(--yellow)";
+		case "LOW": return "var(--blue)";
+		case "GOOD": return "var(--green)";
+		default: return "var(--accent)";
+	}
 }
 
-function scoreMessage(score) {
-	if (score <= 20) return "Critical issues need attention before release.";
-	if (score <= 40) return "Several high-risk issues need to be addressed.";
-	if (score <= 60) return "Review the findings to improve code health.";
-	if (score <= 80) return "A few improvements can strengthen this code.";
-	return "Looking good. No significant risks were detected.";
+function scoreMessage(riskLevel) {
+	switch (riskLevel) {
+		case "CRITICAL": return "The combined findings indicate critical risk.";
+		case "HIGH": return "The combined findings indicate high risk.";
+		case "MEDIUM": return "The combined findings indicate medium risk.";
+		case "LOW": return "The combined findings indicate low risk.";
+		case "GOOD": return "No significant risks were detected.";
+		default: return "The risk classification is unavailable.";
+	}
 }
 
 async function analyzeCode() {
@@ -226,7 +258,7 @@ async function analyzeCode() {
 			throw new Error("The analysis service returned an unexpected response.");
 		}
 
-		displayResult(payload);
+		displayResult(payload, code);
 		setRequestStatus("Analysis completed successfully.", "success");
 		if (!historyElements.historyPage.hidden) {
 			loadHistory();
@@ -464,6 +496,8 @@ function clearWorkspace() {
 	elements.riskLevel.removeAttribute("data-risk");
 	elements.scoreCaption.textContent = "Run an analysis to see your code health score.";
 	elements.totalIssues.textContent = "--";
+	elements.sourceLines.textContent = "--";
+	elements.issueDensity.textContent = "--";
 	elements.criticalCount.textContent = "--";
 	elements.highCount.textContent = "--";
 	elements.mediumCount.textContent = "--";
