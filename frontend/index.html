@@ -131,6 +131,30 @@
 					</div>
 					<span id="findings-summary" class="findings-summary">Run an analysis to see detected issues.</span>
 				</div>
+				<div class="findings-filters" role="group" aria-label="Filter findings">
+					<label for="severity-filter">
+						Severity
+						<select id="severity-filter" disabled>
+							<option value="ALL">All severities</option>
+							<option value="CRITICAL">Critical</option>
+							<option value="HIGH">High</option>
+							<option value="MEDIUM">Medium</option>
+							<option value="LOW">Low</option>
+							<option value="INFO">Info</option>
+						</select>
+					</label>
+					<label for="category-filter">
+						Category
+						<select id="category-filter" disabled>
+							<option value="ALL">All categories</option>
+							<option value="SECURITY">Security</option>
+							<option value="BUG">Bug</option>
+							<option value="CODE_SMELL">Code smell</option>
+							<option value="PERFORMANCE">Performance</option>
+							<option value="STYLE">Style</option>
+						</select>
+					</label>
+				</div>
 				<div class="table-scroll">
 					<table>
 						<thead>

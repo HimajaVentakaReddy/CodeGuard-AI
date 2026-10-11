@@ -24,6 +24,7 @@ const elements = {
 	clearButton: document.querySelector("#clear-button"),
 	codeInput: document.querySelector("#code-input"),
 	criticalCount: document.querySelector("#critical-count"),
+	categoryFilter: document.querySelector("#category-filter"),
 	findingsBody: document.querySelector("#findings-body"),
 	findingsSummary: document.querySelector("#findings-summary"),
 	findingsTotal: document.querySelector("#findings-total"),
@@ -35,6 +36,7 @@ const elements = {
 	reportState: document.querySelector("#report-state"),
 	requestStatus: document.querySelector("#request-status"),
 	riskLevel: document.querySelector("#risk-level"),
+	severityFilter: document.querySelector("#severity-filter"),
 	scoreCaption: document.querySelector("#score-caption"),
 	scoreRing: document.querySelector("#score-ring"),
 	scoreValue: document.querySelector("#score-value"),
@@ -61,6 +63,8 @@ const historyElements = {
 	summaryMedium: document.querySelector("#summary-medium"),
 	summaryLow: document.querySelector("#summary-low")
 };
+
+let currentFindings = [];
 
 function updateLineCount() {
 	const count = elements.codeInput.value ? elements.codeInput.value.split(/\r\n|\r|\n/).length : 1;
@@ -93,9 +97,19 @@ function createCell(value, className = "") {
 }
 
 function renderFindings(findings) {
+	const selectedSeverity = elements.severityFilter.value;
+	const selectedCategory = elements.categoryFilter.value;
+	const visibleFindings = findings.filter(finding =>
+		(selectedSeverity === "ALL" || finding.severity === selectedSeverity)
+		&& (selectedCategory === "ALL" || finding.category === selectedCategory));
+
+	elements.findingsTotal.textContent = String(visibleFindings.length);
+	elements.findingsSummary.textContent = visibleFindings.length === findings.length
+		? `${findings.length} finding${findings.length === 1 ? "" : "s"} detected`
+		: `${visibleFindings.length} of ${findings.length} findings shown`;
 	elements.findingsBody.replaceChildren();
 
-	if (!findings.length) {
+	if (!visibleFindings.length) {
 		const row = document.createElement("tr");
 		row.className = "empty-row";
 		const cell = document.createElement("td");
@@ -107,9 +121,11 @@ function renderFindings(findings) {
 		icon.setAttribute("aria-hidden", "true");
 		icon.textContent = "✓";
 		const title = document.createElement("strong");
-		title.textContent = "No issues detected";
+		title.textContent = findings.length ? "No matching findings" : "No issues detected";
 		const message = document.createElement("span");
-		message.textContent = "No findings matched the current analysis rules.";
+		message.textContent = findings.length
+			? "Change or clear the filters to see other findings."
+			: "No findings matched the current analysis rules.";
 		emptyState.append(icon, title, message);
 		cell.append(emptyState);
 		row.append(cell);
@@ -117,7 +133,7 @@ function renderFindings(findings) {
 		return;
 	}
 
-	for (const finding of findings) {
+	for (const finding of visibleFindings) {
 		const row = document.createElement("tr");
 		const severity = String(finding.severity ?? "INFO").toLowerCase();
 		const badgeCell = document.createElement("td");
@@ -157,12 +173,11 @@ function displayResult(result) {
 	elements.mediumCount.textContent = result.mediumCount ?? 0;
 	elements.lowCount.textContent = result.lowCount ?? 0;
 
-	elements.findingsTotal.textContent = String(findings.length);
-	elements.findingsSummary.textContent = findings.length
-		? `${findings.length} finding${findings.length === 1 ? "" : "s"} detected`
-		: "No issues detected";
 	elements.reportState.textContent = "Analysis complete";
 	elements.reportState.classList.add("ready");
+	elements.severityFilter.disabled = false;
+	elements.categoryFilter.disabled = false;
+	currentFindings = findings;
 	renderFindings(findings);
 }
 
@@ -384,6 +399,11 @@ async function showAnalysisSummary(id) {
 
 function clearWorkspace() {
 	elements.codeInput.value = "";
+	elements.severityFilter.value = "ALL";
+	elements.categoryFilter.value = "ALL";
+	elements.severityFilter.disabled = true;
+	elements.categoryFilter.disabled = true;
+	currentFindings = [];
 	updateLineCount();
 	setRequestStatus("");
 	elements.scoreValue.textContent = "--";
@@ -435,6 +455,8 @@ elements.loadExampleButton.addEventListener("click", () => {
 	elements.codeInput.focus();
 });
 elements.codeInput.addEventListener("input", updateLineCount);
+elements.severityFilter.addEventListener("change", () => renderFindings(currentFindings));
+elements.categoryFilter.addEventListener("change", () => renderFindings(currentFindings));
 historyElements.dashboardNav.addEventListener("click", () => showPage("dashboard"));
 historyElements.historyNav.addEventListener("click", () => showPage("history"));
 historyElements.refreshButton.addEventListener("click", loadHistory);

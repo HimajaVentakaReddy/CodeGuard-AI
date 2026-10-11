@@ -908,6 +908,33 @@ textarea::placeholder {
 	text-align: right;
 }
 
+.findings-filters {
+	padding: 11px 20px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	border-top: 1px solid var(--border-soft);
+}
+
+.findings-filters label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--muted);
+	font-size: 11px;
+}
+
+.findings-filters select {
+	min-height: 32px;
+	padding: 0 28px 0 9px;
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	background: #111a2c;
+	color: var(--text);
+	font: inherit;
+	font-size: 11px;
+}
+
 .table-scroll {
 	width: 100%;
 	overflow-x: auto;
@@ -1218,6 +1245,11 @@ td:nth-child(2) {
 	.findings-heading {
 		padding: 15px;
 		align-items: flex-start;
+	}
+
+	.findings-filters {
+		flex-wrap: wrap;
+		padding: 11px 15px;
 	}
 
 	.history-heading {
