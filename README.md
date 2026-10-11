@@ -15,11 +15,12 @@ The analyzer is deterministic and rule-based: it is not an AI reviewer, Java com
 ## Implemented features
 
 - Analyze Java source sent as JSON or uploaded as a UTF-8 `.java` file.
-- Detect hardcoded password-like assignments, hardcoded API keys/tokens/secrets, and `Runtime.getRuntime().exec(...)`.
+- Detect hardcoded password-like assignments, hardcoded API keys/tokens/secrets, `Runtime.getRuntime().exec(...)`, and started `ProcessBuilder` commands.
 - Detect empty `catch` blocks, TODO/FIXME comments, and `System.out.println(...)`.
-- Return findings with rule ID, category, severity, line number, description, and remediation recommendation.
-- Calculate a 0–100 score and map it to a risk level.
-- Store and browse analysis summaries; source code and findings are not stored in history.
+- Return findings with a title, rule ID, category, severity, line number, description, and remediation recommendation.
+- Calculate a 0–100 score and a risk level that reflects both the score band and the highest finding severity.
+- Filter dashboard findings by severity and category, and view physical source-line and finding-density metrics.
+- Store and browse analysis summaries; source code and findings are not stored in history. Export saved summary metrics as CSV.
 - Use the browser dashboard to edit source, load an example, review findings, and inspect history.
 - Browse the API contract through OpenAPI and Swagger UI.
 
@@ -35,6 +36,7 @@ The analyzer is deterministic and rule-based: it is not an AI reviewer, Java com
 - Docker Compose and Nginx for the optional containerized development stack
 
 There is no external AI or language-model integration in the current implementation.
+The frontend is static HTML/CSS/JavaScript and does not require an npm install or build step.
 
 ## Architecture
 
@@ -52,6 +54,8 @@ flowchart LR
 ```
 
 The analyzer evaluates source text in memory. After successful analysis, only summary metrics and the timestamp are persisted for history; the submitted source and individual findings are not.
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the request flow, scoring/risk semantics, retention boundary, and rule-engine limitations.
 
 ## Run locally
 
@@ -179,10 +183,12 @@ The response includes a `SEC001` high-severity hardcoded-password finding and a 
 
 CodeGuard AI is an implemented, rule-based MVP with backend tests, a browser dashboard, analysis-summary persistence, documented REST endpoints, and Docker Compose configuration. Its rule coverage is intentionally limited to the patterns listed above; it does not compile source, perform comprehensive semantic analysis, provide authentication, or use AI-generated findings.
 
-Run backend tests from the `backend` directory:
+Run backend tests from the repository root:
 
 ```powershell
-.\mvnw.cmd test
+.\backend\mvnw.cmd -f .\backend\pom.xml test
 ```
 
 The test suite uses an in-memory H2 database and does not require MySQL.
+
+For a browser smoke check, serve `frontend/` on port 5500, run the backend on port 8080, submit the dashboard example, change both finding filters, and verify the history page and CSV export. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/API.md](docs/API.md) for implementation details.

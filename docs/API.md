@@ -14,8 +14,8 @@ When the backend is running:
 - Analysis requests return JSON. Send JSON requests with `Content-Type: application/json`.
 - A successful analysis is saved to history as a summary. The source code and individual findings are not stored in history.
 - Analysis summaries are returned newest first.
-- Validation failures and other errors use Spring's standard error response format. The `detail` text may describe the failure; clients should use the HTTP status as the stable signal.
-- The API has **no authentication or authorization**. CORS is explicitly enabled for `http://localhost:5500` and `http://127.0.0.1:5500` on the analysis and history controllers; CORS is not configured as an authentication mechanism.
+- Handled validation errors from the analysis and history controllers return JSON with `status`, `error`, and `message` fields. Unexpected unhandled server errors may use Spring Boot's normal error handling; clients should use the HTTP status as the stable signal.
+- The API has **no authentication or authorization**. CORS is explicitly enabled for `http://localhost:5500`, `http://127.0.0.1:5500`, and `https://himajaventakareddy.github.io` on the analysis and history controllers; CORS is not configured as an authentication mechanism.
 
 ## `GET /api/health`
 
@@ -99,7 +99,7 @@ Returns the score, risk level, issue counts, and all findings from this analysis
 ```json
 {
   "score": 85,
-  "riskLevel": "GOOD",
+  "riskLevel": "HIGH",
   "totalIssues": 1,
   "criticalCount": 0,
   "highCount": 1,
@@ -119,7 +119,11 @@ Returns the score, risk level, issue counts, and all findings from this analysis
 }
 ```
 
-The current rules recognize hardcoded password-like and API key/token/secret assignments, `Runtime.getRuntime().exec(...)`, empty catch blocks, TODO/FIXME comments, and `System.out.println(...)`. Risk scores are capped between 0 and 100; deductions are 25 per critical, 15 per high, 8 per medium, and 3 per low finding. INFO findings do not reduce the score.
+The current rules recognize hardcoded password-like and API key/token/secret assignments, `Runtime.getRuntime().exec(...)`, started `ProcessBuilder` commands, empty catch blocks, TODO/FIXME comments, and `System.out.println(...)`. These are text-pattern checks, not Java parsing or data-flow analysis.
+
+Risk scores are capped between 0 and 100; deductions are 25 per critical, 15 per high, 8 per medium, and 3 per low finding. INFO findings do not reduce the score. The returned risk level is the more severe of the score band and the highest finding severity, so a single HIGH finding cannot be labeled GOOD even when the numeric score is 85.
+
+The browser dashboard also reports the number of physical source lines and findings per 100 lines. This is a simple descriptive density metric, not a quality threshold or measure of rule coverage.
 
 ### Errors
 
@@ -182,7 +186,7 @@ Returns a JSON array; no saved analyses is represented by an empty array.
     "id": 42,
     "analyzedAt": "2026-10-07T12:30:00Z",
     "score": 85,
-    "riskLevel": "GOOD",
+    "riskLevel": "HIGH",
     "totalIssues": 1,
     "criticalCount": 0,
     "highCount": 1,
@@ -221,3 +225,13 @@ Returns one summary object with the same fields as an item from [`GET /api/analy
 - `400 Bad Request` — `id` cannot be converted to an integer.
 - `404 Not Found` — no analysis exists for the supplied numeric identifier.
 - `500 Internal Server Error` — an unexpected history read failure occurs.
+
+A non-numeric identifier returns the structured error form, for example:
+
+```json
+{
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Path parameter 'id' must be a valid integer."
+}
+```
