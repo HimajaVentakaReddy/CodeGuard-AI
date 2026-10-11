@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
@@ -27,6 +28,14 @@ public class ApiExceptionHandler {
 	@ExceptionHandler(HttpMessageNotReadableException.class)
 	public ResponseEntity<ApiErrorResponse> handleUnreadableRequest(HttpMessageNotReadableException exception) {
 		return errorResponse(HttpStatus.BAD_REQUEST, "Request body must contain valid JSON for this endpoint.");
+	}
+
+	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+	public ResponseEntity<ApiErrorResponse> handleInvalidPathParameter(
+			MethodArgumentTypeMismatchException exception) {
+		return errorResponse(
+				HttpStatus.BAD_REQUEST,
+				"Path parameter '" + exception.getName() + "' must be a valid integer.");
 	}
 
 	@ExceptionHandler(MissingServletRequestPartException.class)

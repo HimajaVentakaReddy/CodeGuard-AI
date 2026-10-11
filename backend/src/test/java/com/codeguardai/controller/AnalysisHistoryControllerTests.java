@@ -61,6 +61,16 @@ class AnalysisHistoryControllerTests {
 	}
 
 	@Test
+	void returnsConsistentJsonForNonNumericAnalysisId() throws Exception {
+		mockMvc.perform(get("/api/analyses/not-a-number"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status").value(400))
+				.andExpect(jsonPath("$.error").value("Bad Request"))
+				.andExpect(jsonPath("$.message")
+						.value("Path parameter 'id' must be a valid integer."));
+	}
+
+	@Test
 	void doesNotSaveRejectedAnalysisRequests() throws Exception {
 		mockMvc.perform(post("/api/analyze")
 						.contentType(MediaType.APPLICATION_JSON)
