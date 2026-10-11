@@ -188,7 +188,6 @@ Run backend tests from the repository root:
 ```powershell
 .\backend\mvnw.cmd -f .\backend\pom.xml test
 ```
-
 The test suite uses an in-memory H2 database and does not require MySQL.
 
 For a browser smoke check, serve `frontend/` on port 5500, run the backend on port 8080, submit the dashboard example, change both finding filters, and verify the history page and CSV export. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/API.md](docs/API.md) for implementation details.
