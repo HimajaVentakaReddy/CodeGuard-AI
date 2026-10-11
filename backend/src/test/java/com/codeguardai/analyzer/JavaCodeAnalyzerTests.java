@@ -61,6 +61,28 @@ class JavaCodeAnalyzerTests {
 	}
 
 	@Test
+	void detectsMultipleCredentialAssignmentsOnOneLine() {
+		AnalysisResult result = analyzer.analyze(
+				"String password = \"first\"; String passwd = \"second\"; String apiKey = \"third\";");
+
+		assertEquals(3, result.totalIssues());
+		assertEquals(List.of("SEC001", "SEC001", "SEC002"),
+				result.findings().stream().map(Finding::ruleId).toList());
+		assertEquals(List.of(1, 1, 1), result.findings().stream().map(Finding::lineNumber).toList());
+	}
+
+	@Test
+	void ignoresEmptyOrNonLiteralCredentialValues() {
+		AnalysisResult result = analyzer.analyze("""
+				String password = "";
+				String apiKey = null;
+				String passwordHint = readPassword();
+				""");
+
+		assertEquals(0, result.totalIssues());
+	}
+
+	@Test
 	void detectsDangerousRuntimeExecution() {
 		Finding finding = analyzeSingleFinding("""
 				class Sample {

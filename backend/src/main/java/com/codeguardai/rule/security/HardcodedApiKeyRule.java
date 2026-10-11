@@ -22,7 +22,7 @@ public class HardcodedApiKeyRule implements CodeRule {
 		List<Finding> findings = new ArrayList<>();
 		for (int index = 0; index < lines.size(); index++) {
 			Matcher matcher = SECRET_ASSIGNMENT.matcher(lines.get(index));
-			if (matcher.find()) {
+			while (matcher.find()) {
 				findings.add(new Finding(
 						"SEC002",
 						"Hardcoded API key or token",

@@ -22,7 +22,7 @@ public class HardcodedPasswordRule implements CodeRule {
 		List<Finding> findings = new ArrayList<>();
 		for (int index = 0; index < lines.size(); index++) {
 			Matcher matcher = PASSWORD_ASSIGNMENT.matcher(lines.get(index));
-			if (matcher.find()) {
+			while (matcher.find()) {
 				findings.add(new Finding(
 						"SEC001",
 						"Hardcoded password",
