@@ -64,4 +64,5 @@ History endpoints return summaries only. The browser's CSV download exports summ
 - Backend: run `.\mvnw.cmd spring-boot:run` from `backend/` after configuring the database environment variables documented in the [README](../README.md).
 - Docker Compose runs MySQL, backend, and Nginx-served frontend; GitHub Pages deployment publishes the static frontend only.
 
+
 The frontend currently has no package-manager build or test script; verify its analysis, filters, history, and CSV download in a browser against a running backend.
