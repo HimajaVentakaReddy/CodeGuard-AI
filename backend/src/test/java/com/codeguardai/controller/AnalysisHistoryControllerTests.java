@@ -39,7 +39,7 @@ class AnalysisHistoryControllerTests {
 				.andExpect(jsonPath("$.length()").value(2))
 				.andExpect(jsonPath("$[0].id").value(secondId))
 				.andExpect(jsonPath("$[0].score").value(85))
-				.andExpect(jsonPath("$[0].riskLevel").value("GOOD"))
+				.andExpect(jsonPath("$[0].riskLevel").value("HIGH"))
 				.andExpect(jsonPath("$[0].totalIssues").value(1))
 				.andExpect(jsonPath("$[0].highCount").value(1))
 				.andExpect(jsonPath("$[0].analyzedAt").isNotEmpty())

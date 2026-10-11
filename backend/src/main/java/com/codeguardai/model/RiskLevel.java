@@ -22,4 +22,18 @@ public enum RiskLevel {
 		}
 		return GOOD;
 	}
+
+	public static RiskLevel fromSeverity(Severity severity) {
+		return switch (severity) {
+			case CRITICAL -> CRITICAL;
+			case HIGH -> HIGH;
+			case MEDIUM -> MEDIUM;
+			case LOW -> LOW;
+			case INFO -> GOOD;
+		};
+	}
+
+	public static RiskLevel moreSevere(RiskLevel first, RiskLevel second) {
+		return first.ordinal() <= second.ordinal() ? first : second;
+	}
 }

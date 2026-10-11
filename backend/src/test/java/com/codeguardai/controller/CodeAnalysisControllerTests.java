@@ -95,7 +95,7 @@ class CodeAnalysisControllerTests {
 								"""))
 				.andExpect(status().isOk())
 								.andExpect(jsonPath("$.score").value(74))
-								.andExpect(jsonPath("$.riskLevel").value("LOW"))
+								.andExpect(jsonPath("$.riskLevel").value("HIGH"))
 				.andExpect(jsonPath("$.totalIssues").value(3))
 				.andExpect(jsonPath("$.criticalCount").value(0))
 				.andExpect(jsonPath("$.highCount").value(1))

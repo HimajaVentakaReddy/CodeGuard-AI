@@ -24,6 +24,30 @@ class RiskScoringServiceTests {
 		RiskAssessment assessment = scoringService.assess(result);
 
 		assertEquals(49, assessment.score());
+		assertEquals(RiskLevel.CRITICAL, assessment.riskLevel());
+	}
+
+	@Test
+	void highSeverityFindingPreventsGoodRiskClassification() {
+		RiskAssessment assessment = scoringService.assess(resultWithCounts(0, 1, 0, 0, 0));
+
+		assertEquals(85, assessment.score());
+		assertEquals(RiskLevel.HIGH, assessment.riskLevel());
+	}
+
+	@Test
+	void lowSeverityFindingPreventsGoodRiskClassification() {
+		RiskAssessment assessment = scoringService.assess(resultWithCounts(0, 0, 0, 1, 0));
+
+		assertEquals(97, assessment.score());
+		assertEquals(RiskLevel.LOW, assessment.riskLevel());
+	}
+
+	@Test
+	void scoreBandCanRaiseRiskAboveTheHighestFindingSeverity() {
+		RiskAssessment assessment = scoringService.assess(resultWithCounts(0, 0, 0, 14, 0));
+
+		assertEquals(58, assessment.score());
 		assertEquals(RiskLevel.MEDIUM, assessment.riskLevel());
 	}
 

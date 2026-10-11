@@ -1,6 +1,7 @@
 package com.codeguardai.service;
 
 import com.codeguardai.model.AnalysisResult;
+import com.codeguardai.model.Finding;
 import com.codeguardai.model.RiskAssessment;
 import com.codeguardai.model.RiskLevel;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,12 @@ public class RiskScoringService {
 				+ (long) result.lowCount() * 3;
 		int score = (int) Math.max(0, Math.min(100, 100 - deductions));
 
-		return new RiskAssessment(score, RiskLevel.fromScore(score));
+		RiskLevel riskLevel = RiskLevel.fromScore(score);
+		for (Finding finding : result.findings()) {
+			RiskLevel findingRisk = RiskLevel.fromSeverity(finding.severity());
+			riskLevel = RiskLevel.moreSevere(riskLevel, findingRisk);
+		}
+
+		return new RiskAssessment(score, riskLevel);
 	}
 }
