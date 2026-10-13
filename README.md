@@ -2,7 +2,6 @@
 Rule-based Java source analysis for common security and code-quality issues, delivered through a REST API and web dashboard.
 
 ## What it is
-
 CodeGuard AI is a small, self-hosted application that analyzes Java source text against a set of focused rules. Developers can paste code into the dashboard, submit it to the API, or upload a `.java` file to receive findings with source line numbers, severity, and rule-provided recommendations.
 
 ## The problem it solves
